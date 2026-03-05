@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Pages 인터랙티브 배포 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Warm Stone & Emerald (GitHub-inspired) -->
+    <!-- Application Structure Plan: 이 SPA는 '인터랙티브 학습 대시보드' 구조를 채택했습니다. 텍스트 위주의 원본 가이드를 단계별로 나누어 좌측 네비게이션(학습 목차)과 우측 콘텐츠 영역(학습 내용 및 시각화 데이터)으로 분리했습니다. 사용자가 각 단계를 클릭하며 진행도를 높이고, 시각적인 진행률 차트와 각 단계별 예상 소요 시간 차트를 통해 성취감과 전체적인 흐름을 쉽게 파악할 수 있도록 설계했습니다. -->
+    <!-- Visualization & Content Choices: 1. 학습 진행도 (Donut Chart) -> 목표: 사용자의 전체 가이드 완료 비율 시각화 -> 근거: 단계별 진행 상황을 직관적으로 보여주어 학습 동기 부여. 2. 단계별 예상 소요 시간 (Bar Chart) -> 목표: 각 단계의 난이도/시간 비교 -> 근거: 사용자가 앞으로 남은 과정을 시간적으로 가늠할 수 있도록 도움. 모두 SVG/Mermaid 없이 Chart.js로 구현. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        /* Hide scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e7e5e4; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a8a29e; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #78716c; 
+        }
+    </style>
+</head>
+<body class="text-stone-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header Section -->
+    <header class="bg-stone-900 text-stone-50 py-6 px-4 shadow-md z-10">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold tracking-tight">🚀 GitHub Pages 웹사이트 배포 마스터</h1>
+                <p class="text-stone-400 mt-1 text-sm md:text-base">초보자를 위한 단계별 인터랙티브 학습 대시보드</p>
+            </div>
+            <div class="bg-stone-800 px-4 py-2 rounded-lg border border-stone-700 text-sm">
+                현재 진행률: <span id="header-progress" class="font-bold text-emerald-400 text-lg">0%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow w-full max-w-6xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Navigation & Timeline -->
+        <section class="lg:col-span-4 bg-white rounded-xl shadow-sm border border-stone-200 p-5 h-fit">
+            <h2 class="text-xl font-bold border-b border-stone-200 pb-3 mb-4">📑 학습 목차 (Timeline)</h2>
+            <p class="text-sm text-stone-500 mb-6">아래의 각 단계를 클릭하여 웹사이트 배포 방법에 대해 자세히 알아보고, 여러분의 학습 진행도를 높여보세요. 원본 가이드의 모든 핵심 정보를 포함하고 있습니다.</p>
+            
+            <nav id="step-nav" class="flex flex-col gap-2">
+                <!-- Navigation Items will be injected here by JS -->
+            </nav>
+        </section>
+
+        <!-- Right Column: Content & Visualizations -->
+        <section class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Dynamic Content Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8 transition-all duration-300">
+                <div id="content-intro" class="mb-6">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-2">이 섹션에 대하여</h2>
+                    <p class="text-stone-600">이 영역은 좌측에서 선택한 배포 단계의 핵심 설명과 구체적인 행동 지침을 보여줍니다. 가이드의 텍스트를 읽고 지시에 따라 실습을 진행해 보세요.</p>
+                </div>
+
+                <div class="flex items-center gap-3 mb-4">
+                    <span id="step-icon" class="text-3xl bg-emerald-100 p-3 rounded-xl shadow-sm">🎯</span>
+                    <h3 id="step-title" class="text-2xl md:text-3xl font-bold text-stone-900">학습 목표 및 준비물</h3>
+                </div>
+                
+                <div id="step-content" class="prose prose-stone max-w-none text-stone-700 leading-relaxed">
+                    <!-- Content injected by JS -->
+                </div>
+
+                <div class="mt-8 flex justify-end">
+                    <button id="next-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 hidden">
+                        다음 단계로 이동 &#8594;
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualizations Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Visualization 1: Progress Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-5 flex flex-col">
+                    <h3 class="font-bold text-lg text-stone-800 mb-2">전체 진행 상황</h3>
+                    <p class="text-xs text-stone-500 mb-4">현재까지 완료한 가이드의 비율을 도넛 차트로 보여줍니다. 가이드를 끝까지 완수해보세요.</p>
+                    <div class="flex-grow flex items-center justify-center">
+                        <div class="chart-container">
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization 2: Time Estimate Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-stone-200 p-5 flex flex-col">
+                    <h3 class="font-bold text-lg text-stone-800 mb-2">단계별 소요 시간 예상</h3>
+                    <p class="text-xs text-stone-500 mb-4">각 배포 단계를 수행하는 데 걸리는 대략적인 시간을 막대 차트로 비교합니다. 선택한 단계가 강조됩니다.</p>
+                    <div class="flex-grow flex items-center justify-center">
+                        <div class="chart-container">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Summary Glossary -->
+            <div class="bg-stone-800 text-stone-100 rounded-xl shadow-sm p-6 mt-2">
+                <h3 class="text-xl font-bold mb-3 border-b border-stone-700 pb-2">💡 핵심 용어 요약 (Glossary)</h3>
+                <p class="text-sm text-stone-400 mb-4">가이드를 진행하며 반드시 기억해야 할 핵심 개념 3가지입니다. 이 요소들이 모여 웹사이트 배포를 완성합니다.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-stone-700 p-4 rounded-lg">
+                        <div class="font-bold text-emerald-400 text-lg mb-1">Repository</div>
+                        <p class="text-sm">프로젝트의 집. 파일들을 보관하는 온라인 폴더입니다.</p>
+                    </div>
+                    <div class="bg-stone-700 p-4 rounded-lg">
+                        <div class="font-bold text-emerald-400 text-lg mb-1">index.html</div>
+                        <p class="text-sm">웹사이트의 대문 역할. 진입점 파일로 이름이 반드시 일치해야 합니다.</p>
+                    </div>
+                    <div class="bg-stone-700 p-4 rounded-lg">
+                        <div class="font-bold text-emerald-400 text-lg mb-1">GitHub Pages</div>
+                        <p class="text-sm">인터넷에 내 코드를 연결해주는 마법의 스위치. 호스팅 서비스입니다.</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer class="bg-stone-200 text-stone-600 text-center py-6 text-sm mt-8 border-t border-stone-300">
+        <p>본 페이지는 제공된 "GitHub로 웹페이지 배포하기 가이드"를 기반으로 작성된 대화형 리포트입니다.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Data Storage based on the Source Report
+        const reportData = [
+            {
+                id: 0,
+                shortTitle: "학습 목표 및 준비물",
+                title: "학습 목표 및 준비물",
+                icon: "🎯",
+                timeEst: 2, // Estimated minutes conceptually added for data vis
+                progressVal: 10,
+                content: `
+                    <div class="mb-4">
+                        <h4 class="font-bold text-lg text-stone-800 border-l-4 border-emerald-500 pl-3 mb-2">이 가이드를 통해 얻을 수 있는 것</h4>
+                        <ul class="list-disc list-inside space-y-1 ml-2 text-stone-700">
+                            <li><strong>GitHub</strong>가 무엇인지 이해합니다.</li>
+                            <li>내 컴퓨터에 있는 웹 파일(HTML, CSS)을 GitHub에 올립니다.</li>
+                            <li><strong>GitHub Pages</strong> 기능을 사용하여 나만의 웹사이트 주소를 만듭니다.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg text-stone-800 border-l-4 border-emerald-500 pl-3 mb-2">시작 전 필수 준비물</h4>
+                        <ol class="list-decimal list-inside space-y-2 ml-2 text-stone-700 bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <li><strong>GitHub 계정:</strong> <a href="https://github.com" target="_blank" class="text-emerald-600 font-semibold hover:underline">github.com</a>에서 회원가입이 필요합니다.</li>
+                            <li><strong>배포할 파일:</strong> <code class="bg-stone-200 px-1 py-0.5 rounded text-red-600">index.html</code>이라는 이름의 메인 페이지 파일이 <strong>반드시</strong> 필요합니다. (예: index.html, style.css, script.js 등)</li>
+                        </ol>
+                    </div>
+                `
+            },
+            {
+                id: 1,
+                shortTitle: "1단계: 저장소 만들기",
+                title: "1단계: 저장소(Repository) 만들기",
+                icon: "📁",
+                timeEst: 3,
+                progressVal: 30,
+                content: `
+                    <p class="mb-4 bg-stone-100 p-3 rounded text-stone-700 font-medium">💡 저장소는 프로젝트 파일을 담는 '온라인 폴더'와 같습니다.</p>
+                    <ol class="list-decimal list-inside space-y-4 ml-2 text-stone-700">
+                        <li class="pl-2">GitHub 로그인 후 우측 상단의 <strong>[+]</strong> 버튼 클릭 -> <strong>[New repository]</strong> 선택.</li>
+                        <li class="pl-2"><strong>Repository name:</strong> 원하는 이름 입력 (예: <code class="bg-stone-200 px-1 py-0.5 rounded">my-first-web</code>).</li>
+                        <li class="pl-2"><strong>Public</strong> 선택 (무료 배포를 위해 반드시 공개 설정해야 합니다).</li>
+                        <li class="pl-2">하단의 <strong>[Create repository]</strong> 버튼 클릭하여 생성을 완료합니다.</li>
+                    </ol>
+                `
+            },
+            {
+                id: 2,
+                shortTitle: "2단계: 파일 업로드",
+                title: "2단계: 파일 업로드하기",
+                icon: "⬆️",
+                timeEst: 2,
+                progressVal: 50,
+                content: `
+                    <p class="mb-4 text-stone-700">이제 내 컴퓨터에 있는 소스 코드를 방금 만든 온라인 저장소로 옮깁니다.</p>
+                    <ol class="list-decimal list-inside space-y-4 ml-2 text-stone-700 mb-4">
+                        <li class="pl-2">새로 만든 저장소 화면에서 <strong>"uploading an existing file"</strong> 링크를 클릭합니다.</li>
+                        <li class="pl-2">배포하고 싶은 파일들을 드래그 앤 드롭으로 박스 안에 넣습니다.</li>
+                        <li class="pl-2">하단의 <strong>Commit changes</strong> 버튼을 눌러 변경사항을 저장합니다.</li>
+                    </ol>
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                        <p class="text-red-700 font-bold mb-1">⚠️ 주의사항</p>
+                        <p class="text-red-600 text-sm">메인 페이지 파일 이름은 반드시 <code class="bg-red-100 px-1 py-0.5 rounded text-red-800">index.html</code>이어야 시스템이 웹사이트의 첫 화면으로 인식합니다.</p>
+                    </div>
+                `
+            },
+            {
+                id: 3,
+                shortTitle: "3단계: Pages 설정",
+                title: "3단계: GitHub Pages 설정하기",
+                icon: "⚙️",
+                timeEst: 2,
+                progressVal: 75,
+                content: `
+                    <p class="mb-4 text-stone-700 font-medium text-lg text-emerald-700">이 단계가 업로드한 파일을 실제 웹사이트로 변환하는 핵심 단계입니다.</p>
+                    <ol class="list-decimal list-inside space-y-4 ml-2 text-stone-700">
+                        <li class="pl-2">저장소 상단 메뉴에서 <strong>[Settings]</strong> (톱니바퀴 아이콘)를 클릭합니다.</li>
+                        <li class="pl-2">왼쪽 사이드바 메뉴를 스크롤하여 <strong>[Pages]</strong>를 선택합니다.</li>
+                        <li class="pl-2"><strong>Build and deployment</strong> 섹션의 <strong>Branch</strong> 설정을 확인합니다.
+                            <ul class="list-disc list-inside ml-8 mt-2 text-stone-600">
+                                <li><code class="bg-stone-200 px-1 py-0.5 rounded">None</code>으로 되어 있다면 드롭다운을 열어 <code class="bg-stone-200 px-1 py-0.5 rounded font-bold text-emerald-600">main</code> (또는 <code class="bg-stone-200 px-1 py-0.5 rounded">master</code>)으로 변경합니다.</li>
+                            </ul>
+                        </li>
+                        <li class="pl-2">옆의 폴더 설정은 <code class="bg-stone-200 px-1 py-0.5 rounded">/(root)</code> 그대로 두고 <strong>[Save]</strong> 버튼을 누릅니다.</li>
+                    </ol>
+                `
+            },
+            {
+                id: 4,
+                shortTitle: "4단계: 접속 및 확인",
+                title: "4단계: 배포 확인 및 접속하기",
+                icon: "🌐",
+                timeEst: 3,
+                progressVal: 90,
+                content: `
+                    <p class="mb-4 text-stone-700">설정을 마치면 GitHub 뒷단에서 웹사이트를 구축(Build)하기 시작합니다.</p>
+                    <ol class="list-decimal list-inside space-y-4 ml-2 text-stone-700 mb-6">
+                        <li class="pl-2">서버 상황에 따라 약 <strong>1~3분 정도 기다린 후</strong> Settings > Pages 화면을 새로고침(F5)합니다.</li>
+                        <li class="pl-2">성공적으로 배포가 완료되면 상단에 초록색 배경과 함께 <strong>"Your site is live at [URL]"</strong> 라는 메시지와 주소가 나타납니다.</li>
+                        <li class="pl-2">해당 주소를 클릭하면 전 세계 어디서든 접속 가능한 나만의 웹사이트가 열립니다! 🎉</li>
+                    </ol>
+                `
+            },
+            {
+                id: 5,
+                shortTitle: "꿀팁: 수정사항 반영",
+                title: "꿀팁: 웹사이트 수정사항 반영하기",
+                icon: "🔄",
+                timeEst: 1,
+                progressVal: 100,
+                content: `
+                    <p class="mb-4 text-stone-700">이미 배포된 웹사이트의 내용(코드)을 바꾸고 싶다면 다음 절차를 따릅니다.</p>
+                    <div class="bg-white border border-stone-200 rounded-lg p-5 shadow-sm">
+                        <ol class="list-decimal list-inside space-y-3 text-stone-700">
+                            <li class="pl-2">저장소의 가장 첫 화면인 <strong>[Code]</strong> 탭으로 돌아갑니다.</li>
+                            <li class="pl-2">수정할 파일을 클릭하여 연필 아이콘으로 수정하거나, 내 컴퓨터에서 수정한 새로운 파일을 다시 업로드(Add file) 합니다.</li>
+                            <li class="pl-2">변경 사항에 대한 메모를 남기고 <strong>Commit</strong>을 완료합니다.</li>
+                        </ol>
+                        <p class="mt-4 text-sm text-emerald-600 font-semibold bg-emerald-50 inline-block px-3 py-1 rounded-full">💡 커밋 완료 후 약 1분 정도 기다리면 자동으로 웹사이트 화면이 업데이트됩니다.</p>
+                    </div>
+                `
+            }
+        ];
+
+        // State Management
+        let currentState = {
+            currentStepId: 0,
+            maxStepReached: 0
+        };
+
+        // Chart Instances
+        let progressChartInstance = null;
+        let timeChartInstance = null;
+
+        // Core Interaction & DOM Updates
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initCharts();
+            renderStep(currentState.currentStepId);
+
+            // Next button listener
+            document.getElementById('next-btn').addEventListener('click', () => {
+                if (currentState.currentStepId < reportData.length - 1) {
+                    handleStepClick(currentState.currentStepId + 1);
+                }
+            });
+        });
+
+        function initNavigation() {
+            const navContainer = document.getElementById('step-nav');
+            reportData.forEach((step, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all duration-200 hover:bg-stone-50 focus:outline-none flex items-center gap-3`;
+                btn.id = `nav-btn-${step.id}`;
+                btn.innerHTML = `<span class="text-xl">${step.icon}</span> <span class="font-medium">${step.shortTitle}</span>`;
+                
+                btn.addEventListener('click', () => handleStepClick(step.id));
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function handleStepClick(id) {
+            currentState.currentStepId = id;
+            if (id > currentState.maxStepReached) {
+                currentState.maxStepReached = id;
+            }
+            renderStep(id);
+            updateCharts(id);
+        }
+
+        function renderStep(id) {
+            const data = reportData.find(d => d.id === id);
+            if (!data) return;
+
+            // Update DOM elements
+            document.getElementById('step-icon').textContent = data.icon;
+            document.getElementById('step-title').textContent = data.title;
+            document.getElementById('step-content').innerHTML = data.content;
+            
+            // Header progress update (use max reached for actual progress feeling)
+            const maxProgress = reportData.find(d => d.id === currentState.maxStepReached).progressVal;
+            document.getElementById('header-progress').textContent = `${maxProgress}%`;
+
+            // Update Navigation Styles
+            reportData.forEach(step => {
+                const btn = document.getElementById(`nav-btn-${step.id}`);
+                if (step.id === id) {
+                    btn.className = `w-full text-left px-4 py-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm transition-all duration-200 flex items-center gap-3 scale-[1.02] transform`;
+                } else if (step.id <= currentState.maxStepReached) {
+                     btn.className = `w-full text-left px-4 py-3 rounded-lg border-l-4 border-emerald-200 bg-white text-stone-600 hover:bg-stone-50 transition-all duration-200 flex items-center gap-3`;
+                } else {
+                    btn.className = `w-full text-left px-4 py-3 rounded-lg border-l-4 border-transparent bg-white text-stone-400 hover:bg-stone-50 transition-all duration-200 flex items-center gap-3`;
+                }
+            });
+
+            // Handle Next Button visibility
+            const nextBtn = document.getElementById('next-btn');
+            if (id < reportData.length - 1) {
+                nextBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        // --- Chart.js Implementations ---
+        function initCharts() {
+            // Chart global defaults
+            Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            Chart.defaults.color = '#57534e'; // stone-600
+
+            // 1. Progress Donut Chart
+            const ctxProgress = document.getElementById('progressChart').getContext('2d');
+            progressChartInstance = new Chart(ctxProgress, {
+                type: 'doughnut',
+                data: {
+                    labels: ['완료된 과정', '남은 과정'],
+                    datasets: [{
+                        data: [10, 90], // Initial state
+                        backgroundColor: ['#10b981', '#e7e5e4'], // emerald-500, stone-200
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12 } },
+                        tooltip: {
+                            callbacks: { label: function(context) { return context.label + ': ' + context.parsed + '%'; } }
+                        }
+                    },
+                    animation: { animateScale: true, animateRotate: true }
+                }
+            });
+
+            // 2. Time Estimate Bar Chart
+            const ctxTime = document.getElementById('timeChart').getContext('2d');
+            const labels = reportData.map(d => d.shortTitle);
+            const times = reportData.map(d => d.timeEst);
+            
+            timeChartInstance = new Chart(ctxTime, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '예상 소요 시간 (분)',
+                        data: times,
+                        backgroundColor: '#d6d3d1', // default stone-300
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: '시간 (분)' },
+                            grid: { color: '#f5f5f4' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                callback: function(value) {
+                                    // Label wrapping logic (16 chars approx)
+                                    const label = this.getLabelForValue(value);
+                                    if(label.length > 8) return label.substring(0,8) + '...';
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (context) => context[0].label, // full label on hover
+                                label: (context) => `소요 시간: ${context.parsed.y} 분`
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Initial chart color update
+            updateCharts(currentState.currentStepId);
+        }
+
+        function updateCharts(activeId) {
+            // Update Progress Chart
+            const currentProgress = reportData.find(d => d.id === currentState.maxStepReached).progressVal;
+            progressChartInstance.data.datasets[0].data = [currentProgress, 100 - currentProgress];
+            progressChartInstance.update();
+
+            // Update Time Bar Chart (Highlight active step)
+            const backgroundColors = reportData.map(d => 
+                d.id === activeId ? '#10b981' : // Active: emerald-500
+                d.id < activeId ? '#a7f3d0' :   // Passed: emerald-200
+                '#e7e5e4'                       // Future: stone-200
+            );
+            timeChartInstance.data.datasets[0].backgroundColor = backgroundColors;
+            timeChartInstance.update();
+        }
+
+    </script>
+</body>
+</html>
